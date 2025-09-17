@@ -33,7 +33,7 @@ class idAnimatedEntity;
 class idProjectile;
 class rvWeapon;
 
-class rvViewWeapon : public idAnimatedEntity {
+class rvViewWeapon : public idAnimatedEntity{
 public:
 
 	CLASS_PROTOTYPE( rvViewWeapon );

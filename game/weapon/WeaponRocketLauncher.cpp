@@ -9,6 +9,7 @@
 #include "../Projectile.h"
 #endif
 
+
 class rvWeaponRocketLauncher : public rvWeapon {
 public:
 
@@ -102,7 +103,7 @@ void rvWeaponRocketLauncher::Spawn ( void ) {
 	attackDict.GetFloat ( "speed", "0", guideSpeedFast );
 	guideSpeedSlow = guideSpeedFast * f;
 	
-	reloadRate = SEC2MS ( spawnArgs.GetFloat ( "reloadRate", ".8" ) );
+	reloadRate = SEC2MS ( spawnArgs.GetFloat ( "reloadRate", ".1" ) );
 	
 	guideAccelTime = SEC2MS ( spawnArgs.GetFloat ( "lockAccelTime", ".25" ) );
 	
@@ -117,14 +118,14 @@ void rvWeaponRocketLauncher::Spawn ( void ) {
 	animNum = viewModel->GetAnimator()->GetAnim ( "reload" );
 	if ( animNum ) {
 		anim = (idAnim*)viewModel->GetAnimator()->GetAnim ( animNum );
-		rate = (float)anim->Length() / (float)SEC2MS(spawnArgs.GetFloat ( "reloadRate", ".8" ));
+		rate = (float)anim->Length() / (float)SEC2MS(spawnArgs.GetFloat ( "reloadRate", ".1" ));
 		anim->SetPlaybackRate ( rate );
 	}
 
 	animNum = viewModel->GetAnimator()->GetAnim ( "reload_empty" );
 	if ( animNum ) {
 		anim = (idAnim*)viewModel->GetAnimator()->GetAnim ( animNum );
-		rate = (float)anim->Length() / (float)SEC2MS(spawnArgs.GetFloat ( "reloadRate", ".8" ));
+		rate = (float)anim->Length() / (float)SEC2MS(spawnArgs.GetFloat ( "reloadRate", ".1" ));
 		anim->SetPlaybackRate ( rate );
 	}
 
@@ -321,7 +322,7 @@ CLASS_STATES_DECLARATION ( rvWeaponRocketLauncher )
 	STATE ( "Fire",				rvWeaponRocketLauncher::State_Fire )
 	STATE ( "Raise",			rvWeaponRocketLauncher::State_Raise )
 	STATE ( "Lower",			rvWeaponRocketLauncher::State_Lower )
-
+	
 	STATE ( "Rocket_Idle",		rvWeaponRocketLauncher::State_Rocket_Idle )
 	STATE ( "Rocket_Reload",	rvWeaponRocketLauncher::State_Rocket_Reload )
 	
@@ -445,24 +446,30 @@ stateResult_t rvWeaponRocketLauncher::State_Fire ( const stateParms_t& parms ) {
 	};	
 	switch ( parms.stage ) {
 		case STAGE_INIT:
-			nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));		
-			Attack ( false, 1, spread, 0, 1.0f );
-			PlayAnim ( ANIMCHANNEL_LEGS, "fire", parms.blendFrames );	
+
+			nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));
+			//fires a whole clip at once I changed the clip size from 3 to 5 in the def file
+			//changed the ammount of ammo to 35
+			for (int i = 0; i < AmmoAvailable(); i++) {
+				Attack(false, 1, 15, 0, 30.0f);
+				PlayAnim(ANIMCHANNEL_LEGS, "Fire", parms.blendFrames);
+			}
 			return SRESULT_STAGE ( STAGE_WAIT );
-	
+
 		case STAGE_WAIT:			
 			if ( wsfl.attack && gameLocal.time >= nextAttackTime && ( gameLocal.isClient || AmmoInClip ( ) ) && !wsfl.lowerWeapon ) {
 				SetState ( "Fire", 0 );
 				return SRESULT_DONE;
-			}
+			}  
 			if ( gameLocal.time > nextAttackTime && AnimDone ( ANIMCHANNEL_LEGS, 4 ) ) {
-				SetState ( "Idle", 4 );
+				SetState ( "Idle", 0 );
 				return SRESULT_DONE;
 			}
 			return SRESULT_WAIT;
 	}
 	return SRESULT_ERROR;
 }
+
 
 /*
 ================
