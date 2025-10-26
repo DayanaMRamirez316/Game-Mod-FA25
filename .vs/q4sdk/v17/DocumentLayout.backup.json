@@ -1,0 +1,113 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{49BEC5C6-B964-417A-851E-808886B57430}|game.vcxproj|C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\Player.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{49BEC5C6-B964-417A-851E-808886B57430}|game.vcxproj|solutionrelative:game\\Player.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{49BEC5C6-B964-417A-851E-808886B57430}|game.vcxproj|C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\Player.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{49BEC5C6-B964-417A-851E-808886B57430}|game.vcxproj|solutionrelative:game\\Player.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{49BEC5C6-B964-417A-851E-808886B57430}|game.vcxproj|C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\gamesys\\SysCmds.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{49BEC5C6-B964-417A-851E-808886B57430}|game.vcxproj|solutionrelative:game\\gamesys\\SysCmds.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{49BEC5C6-B964-417A-851E-808886B57430}|game.vcxproj|C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\Game_local.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{49BEC5C6-B964-417A-851E-808886B57430}|game.vcxproj|solutionrelative:game\\Game_local.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 1,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedHeight": 198,
+          "SelectedChildIndex": 5,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Game_local.cpp",
+              "DocumentMoniker": "C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\Game_local.cpp",
+              "RelativeDocumentMoniker": "game\\Game_local.cpp",
+              "ToolTip": "C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\Game_local.cpp",
+              "RelativeToolTip": "game\\Game_local.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAALMNAAAZAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-10-24T22:16:08.099Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SysCmds.cpp",
+              "DocumentMoniker": "C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\gamesys\\SysCmds.cpp",
+              "RelativeDocumentMoniker": "game\\gamesys\\SysCmds.cpp",
+              "ToolTip": "C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\gamesys\\SysCmds.cpp",
+              "RelativeToolTip": "game\\gamesys\\SysCmds.cpp",
+              "ViewState": "AgIAAEkMAAAAAAAAAAAUwFAMAAACAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-10-22T20:59:42.024Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Player.h",
+              "DocumentMoniker": "C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\Player.h",
+              "RelativeDocumentMoniker": "game\\Player.h",
+              "ToolTip": "C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\Player.h",
+              "RelativeToolTip": "game\\Player.h",
+              "ViewState": "AgIAAFABAAAAAAAAAAAmwGMBAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-10-20T19:41:54.642Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Player.cpp",
+              "DocumentMoniker": "C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\Player.cpp",
+              "RelativeDocumentMoniker": "game\\Player.cpp",
+              "ToolTip": "C:\\Users\\Yeimy\\git\\Game-Mod-FA25\\game\\Player.cpp",
+              "RelativeToolTip": "game\\Player.cpp",
+              "ViewState": "AgIAAIwGAAAAAAAAAAAvwFEGAAATAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-10-15T20:53:37.107Z",
+              "EditorCaption": ""
+            }
+          ]
+        },
+        {
+          "DockedHeight": 202,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{68487888-204a-11d3-87eb-00c04f7971a5}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

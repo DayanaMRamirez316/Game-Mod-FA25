@@ -38,6 +38,7 @@ const int BUTTON_TOURNEY		= BIT(7);
 const int BUTTON_STRAFE			= BIT(8);
 // RAVEN END
 
+const int BUTTON_DASH			= BIT(9); //MY CODE
 
 // usercmd_t->impulse commands
 const int IMPULSE_0				= 0;			// weap 0
@@ -149,7 +150,7 @@ public:
 	signed char impulse;						// impulse command
 	byte		flags;							// additional flags
 	int			sequence;						// just for debugging
-
+	signed char dash;							//Dash movement using 
 public:
 	void		ByteSwap();						// on big endian systems, byte swap the shorts and ints
 	bool		operator==( const usercmd_t &rhs ) const;

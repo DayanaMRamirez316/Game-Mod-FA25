@@ -336,7 +336,7 @@ void idInventory::RestoreInventory( idPlayer *owner, const idDict &dict ) {
 	//Clear();
 
 	// health/armor
-	maxHealth		= dict.GetInt( "maxhealth", "100" );
+	maxHealth		= dict.GetInt( "maxhealth", "200" );
 	armor			= dict.GetInt( "armor", "50" );
 	maxarmor		= dict.GetInt( "maxarmor", "100" );
 
@@ -1342,6 +1342,356 @@ idPlayer::idPlayer() {
 	teamAmmoRegenPending	= false;
 	teamDoubler			= NULL;		
 	teamDoublerPending		= false;
+
+	//setting up Rhythm system
+	beatTimer = 0.0f;
+	noteActive = false;
+	noteMove = 0.0f;
+	slowdownPow = false;
+
+	block = false;
+	blockEndTime = 0;
+	hitCounter = 0;
+	missCounter = 0;
+
+	changeAngle = false;
+	speedUp = false;
+	changeAngle = false;
+	noteE = false;
+
+	powRand = gameLocal.random.RandomInt(2);
+	hinderRand = gameLocal.random.RandomInt(3);
+}
+
+/*
+==============
+idPlayer::beatSpeed
+==============
+*/
+void idPlayer::beatSpeed(float bpm) {
+	//song with x BPM 
+	beatTime = (60.0f / bpm) * 1000.0f;
+}
+/*
+==============
+idPlayer::SpawnNotes
+==============
+*/
+
+void idPlayer::spawnNotes() { 
+	if (!hud) {
+		return;
+	}
+	
+	if (slowdownPow) {
+		beatSpeed(80);
+		
+	}
+	else if (speedUp) {
+		beatSpeed(120);
+		
+	}
+	else {
+		beatSpeed(100);
+		
+	}
+	
+	//spawn notes to the beat
+	beatTimer += gameLocal.msec;
+	if (beatTimer >= beatTime && !noteActive) {
+		beatTimer = 0.0f;
+		noteActive = true;
+		noteMove = 0.0f;
+
+
+		if (disapear == true) {
+			hud->SetStateBool("Note_visible", false);
+
+		}
+		else {
+			hud->SetStateBool("Note_visible", true);
+			
+		}
+	}
+
+	//move note up towards the note indicator
+	if (noteActive) {
+		noteMove += (float)gameLocal.msec / beatTime;
+		if (changeAngle == true) {
+			//make sure that random direction of notes goes one at a time
+			if (noteE == false) {
+				rand = gameLocal.random.RandomInt(3);
+				noteE = true;
+			}
+			changeAngleRan(rand);
+		}
+		else {
+			noteE = false;
+			float currentY = 400 - (400 - 99) * noteMove;
+			hud->SetStateFloat("Note_pos_x", 0);
+			hud->SetStateFloat("Note_pos_y", currentY);
+
+			//input default: rect	0,"gui::Note_pos_y",641,480   rec: x ,y ,Width Height
+		}
+
+		//Note has reached center and player missed
+		if (noteMove >= 1.0f) {
+			noteActive = false;
+			hud->SetStateBool("Note_visible", false);
+			hud->SetStateBool("Miss_visible", true);
+			hud->SetStateBool("Hit_visible", false);
+			hud->SetStateBool("Early_visible", false);
+			noteE = false;
+			//reset hit counter
+			hitCounter = 0;
+			missCounter++;
+		}
+
+		if (missCounter >= 20) {
+			hinder(hinderRand);
+		}
+
+	}
+}
+
+void idPlayer::checkHit(){
+	//check for combos
+	//checks if player hit or hit too early
+	if (usercmd.buttons & BUTTON_ATTACK && !(oldButtons & BUTTON_ATTACK)){
+		if (noteActive && noteMove > 0.8f && noteMove < 1.0f) {
+			noteActive = false;
+			hud->SetStateBool("Note_visible", false);
+			hud->SetStateBool("Hit_visible", true);
+			hud->SetStateBool("Early_visible", false);
+			hud->SetStateBool("Miss_visible", false);
+			missCounter = 0;
+			hitCounter++;
+			
+		}
+		else if (noteActive) {
+			noteActive = false;
+			hud->SetStateBool("Early_visible", true);
+			hud->SetStateBool("Hit_visible", false);
+			hud->SetStateBool("Miss_visible", false);
+			missCounter = 0;
+			hitCounter = 0;
+			
+		}
+		//get random number 1 to 5
+		if (hitCounter >= 5	) {
+			//show hit counter
+			powerUp(powRand);
+			
+		}
+		else {
+			hud->SetStateBool("combo_visible", false);
+			
+		}
+		
+	}
+
+}
+
+void idPlayer::checkStomp() {
+	if (!stomping) {
+		return;
+	}
+	
+	//check if player has landed
+	if (stomping && GetPhysics()->HasGroundContacts()) {
+		//player has landed, deal damage and knockback
+		idVec3 stompOrg = GetPhysics()->GetOrigin();
+		float stompRad = 150.0f;
+		float stompForce = 200.0f;
+
+		//who is around us?
+		idEntity* entity;
+		for (int i = 0; i < gameLocal.num_entities; i++) {
+			//array of entities check if their near player damage radius
+			entity = gameLocal.entities[i];
+			//no entity or just player
+			if (!entity || entity == this || !entity->IsType(idActor::GetClassType())) {
+				continue;
+			}
+			
+			if (entity->CanTakeDamage() && entity != this) {
+				
+				idVec3 toEntity = entity->GetPhysics()->GetOrigin() - stompOrg;
+				float dist = toEntity.Length();
+
+				if (dist <= stompRad) {
+					//calulate damage base on distance
+					float damage = stompDamage * (1.0f - (dist / stompRad));
+					//apply
+					entity->Damage(this, this, idVec3(0, 0, 1), "damage_generic", damage, 0 );
+
+					//knockback
+					toEntity.Normalize();
+					entity->GetPhysics()->SetLinearVelocity(toEntity * stompForce);
+				}
+			}
+		}
+		stomping = false;
+		gameLocal.Printf("Stomp impact done\n");
+		godmode = false;
+		
+	}
+}
+
+/*
+==============
+idPlayer::blast function
+==============
+*/
+void idPlayer::blast() {
+	idVec3 origin = GetPhysics()->GetOrigin();
+	float blastRad = 300.0f;
+	float blastForce = 1000.0f;
+	for (int i = 0; i < gameLocal.num_entities; i++) {
+		idEntity* entity = gameLocal.entities[i];
+		if (!entity || entity == this || !entity->IsType(idActor::GetClassType())){
+			continue;
+		}
+
+		idVec3 toEntity = entity->GetPhysics()->GetOrigin() - origin;
+		float dist = toEntity.Length();
+
+		if (dist <= blastRad) {
+			//knockback
+			toEntity.Normalize();
+			entity->GetPhysics()->SetLinearVelocity(toEntity * blastForce);
+
+			//damage
+			float damage = 50.0f * (1.0f - (dist / blastRad));
+			entity->Damage(this, this, idVec3(0, 0, 1), "damage_generic", damage, 0);
+
+		}
+
+	}
+}
+
+/*
+==============
+idPlayer::freeze
+==============
+*/
+void idPlayer::Freeze() {
+	for (int i = 0; i < gameLocal.num_entities; i++) {
+		idEntity* entity = gameLocal.entities[i];
+		if ( !entity || !entity->IsType(idAI::GetClassType() )){
+			continue;
+		}
+		
+	}
+}
+
+/*
+==============
+idPlayer::change movement
+==============
+*/
+void idPlayer::changeAngleRan(int num) {
+	//change note movement
+	if (num == 0) {
+		float currX = 400 + (400 - 99) * -noteMove;
+		hud->SetStateFloat("Note_pos_x", currX);
+		hud->SetStateFloat("Note_pos_y", 99);
+		
+	}
+	else if (num == 1) {
+		float currX = 400 + (400 - 99) * -noteMove;
+		hud->SetStateFloat("Note_pos_x", -currX);
+		hud->SetStateFloat("Note_pos_y", 99);
+		
+	}
+	else {
+		float currY = (1 - (1 + 99) * -noteMove * 2) - 100;
+		hud->SetStateFloat("Note_pos_x", 0);
+		hud->SetStateFloat("Note_pos_y", currY);
+	
+	}
+	
+}
+
+/*
+==============
+idPlayer::reset power up
+==============
+*/
+void idPlayer::resetPow(int num) {
+	//check power up time
+	switch (num) {
+	case 0:
+		slowdownPow = false;
+		hud->SetStateBool("slowdown_visible", false);
+		break;
+	case 1:
+		blastPow = false;
+		hud->SetStateBool("blast_visible", false);
+		break;
+
+	case 2:
+		invinciblePow = false;
+		hud->SetStateBool("invins_visible", false);
+		break;
+	case 3:
+		multiBullets = false;
+		hud->SetStateBool("multiBullets_visible", false);
+		break;
+	case 4:
+		freezePow = false;
+		hud->SetStateBool("freeze_visible", false);
+		break;
+	}
+}
+
+
+/*
+==============
+idPlayer::hinder
+==============
+*/
+void idPlayer::hinder(int num) {
+	//hinder duration about 5 seconds for now
+	hinderTime = gameLocal.time;
+	hinderEndTime = gameLocal.time + 5000;
+
+	switch (num) {
+	case 0:
+		//speed up
+		speedUp = true;
+		break;
+	case 1:
+		changeAngle = true;
+		break;
+	case 2:
+		//disapear
+		disapear = true;
+		break;
+	}
+}
+
+/*
+==============
+idPlayer:: reset hinder
+==============
+*/
+void idPlayer::resetHinder(int num) {
+
+	switch (num) {
+	case 0:
+		speedUp = false;
+		hinderRand = 2;
+		break;
+	case 1:
+		changeAngle = false;
+		hinderRand = 0;
+		break;
+	case 2:
+		disapear = false;
+		hinderRand = 1;
+		break;
+	}
 }
 
 /*
@@ -1650,7 +2000,7 @@ void idPlayer::Init( void ) {
 			weaponViewModel->SetSkin( weaponViewSkin );
 		}
 	}
-
+	
  	value = spawnArgs.GetString( "joint_hips", "" );
  	hipJoint = animator.GetJointHandle( value );
  	if ( hipJoint == INVALID_JOINT ) {
@@ -1999,9 +2349,9 @@ void idPlayer::Spawn( void ) {
 	}
 
 	// ddynerman: defaults for these values are the single player fall deltas
-	fatalFallDelta = spawnArgs.GetFloat("fatal_fall_delta", "65");
-	hardFallDelta = spawnArgs.GetFloat("hard_fall_delta", "45");
-	softFallDelta = spawnArgs.GetFloat("soft_fall_delta", "30");
+	fatalFallDelta = spawnArgs.GetFloat("fatal_fall_delta", "75");
+	hardFallDelta = spawnArgs.GetFloat("hard_fall_delta", "50");
+	softFallDelta = spawnArgs.GetFloat("soft_fall_delta", "35");
 	noFallDelta = spawnArgs.GetFloat("no_fall_delta", "7");
 
 	// precache decls
@@ -2996,7 +3346,7 @@ void idPlayer::RestorePersistantInfo( void ) {
 	spawnArgs.Copy( gameLocal.persistentPlayerInfo[entityNumber] );
 
 	inventory.RestoreInventory( this, spawnArgs );
- 	health = spawnArgs.GetInt( "health", "100" );
+ 	health = spawnArgs.GetInt( "health", "200" );
  	if ( !gameLocal.isClient ) {
  		idealWeapon = spawnArgs.GetInt( "current_weapon", "0" );
  	}
@@ -3934,6 +4284,14 @@ void idPlayer::WeaponFireFeedback( const idDict *weaponDef ) {
 
 	// play the fire animation
 	pfl.weaponFired = true;
+
+	//check if multiBullets power up flag is triggered
+	if (multiBullets) {
+		for (int i = -2; i <= 2; i++) {
+			idVec3 spreadDir = viewAxis[0] + viewAxis[i] * (i * 0.09f);
+			spreadDir.Normalize();
+		}
+	}
 
 	// Bias the intent direction more heavily due to firing
 	BiasIntentDir( viewAxis[0]*100.0f, 1.0f );
@@ -5175,6 +5533,7 @@ void idPlayer::UpdateObjectiveInfo( void ) {
 	objectiveSystem->SetStateString( "objective1", "" );
 	objectiveSystem->SetStateString( "objective2", "" );
 	objectiveSystem->SetStateString( "objective3", "" );
+	objectiveSystem->SetStateString( "objective4", "" );
 
 // RAVEN BEGIN
 // mekberg: swap objective positions to allow for stack-like appearance.
@@ -5187,6 +5546,7 @@ void idPlayer::UpdateObjectiveInfo( void ) {
 		objectiveSystem->SetStateString( va( "objectiveshot%i", objectiveCount), inventory.objectiveNames[i].screenshot.c_str() );
 	}
 	objectiveSystem->SetStateBool( "noObjective", !objectiveCount );
+	objectiveSystem->SetStateBool( "objective4", !objectiveCount );
 // RAVEN END
 
 	objectiveSystem->StateChanged( gameLocal.time );
@@ -9643,6 +10003,29 @@ void idPlayer::Think( void ) {
 		inBuyZone = false;
 
 	inBuyZonePrev = false;
+	//fdaf
+
+	spawnNotes();
+	checkHit();
+	checkStomp();
+	//block last for 5 seconds unless player presses block button again then block gets turned off
+	if (block && blockEndTime > 0 && gameLocal.time > blockEndTime) {
+		block = false;
+		godmode = false;
+		blockEndTime = 0;
+		hud->SetStateBool("block_indicator_visible", false);
+	}
+
+	if (powEndTime > 0 && gameLocal.time > powEndTime) {
+		//reset power ups
+		resetPow(powRand);
+	}
+
+	if (hinderEndTime > 0 && gameLocal.time > hinderEndTime) {
+		resetHinder(hinderRand);
+	}
+
+
 }
 
 /*
@@ -10321,6 +10704,7 @@ void idPlayer::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
   	lastDamageDir.Normalize();
 	lastDamageDef = damageDef->Index();
 	lastDamageLocation = location;
+
 }
 
 /*
@@ -14076,5 +14460,45 @@ int idPlayer::CanSelectWeapon(const char* weaponName)
 
 	return weaponNum;
 }
+//5 power ups
+void idPlayer::powerUp(int num) {
+	//power up duration about 10 seconds for now
+	powTime = gameLocal.time;
+	powEndTime = gameLocal.time + 10000;
 
+	switch (num) {
+	case 0:
+	//slow down notes
+		slowdownPow = true;
+		hud->SetStateBool("slowdown_visible", true);
+		break;
+	case 1:
+		//blast
+		//kinda like stomp but but knocksback harder the enemies
+		blastPow = true;
+		blast();
+		hud->SetStateBool("blast_visible", true);
+		break;
+		
+	case 2:
+	//invinsibility + infinite bullets
+		invinciblePow = true;
+		hud->SetStateBool("invins_visible", true);
+		break;
+	case 3:
+	//multiply bullets 
+		//all weapons fire multiple bullets for few seconds
+		multiBullets = true;
+		hud->SetStateBool("multiBullets_visible", true);
+		break;
+	case 4:
+		//Freeze
+		//stops enemies movments
+		freezePow = true;
+		Freeze();
+		hud->SetStateBool("freeze_visible", true);
+		break;
+	}
+
+}
 // RITUAL END

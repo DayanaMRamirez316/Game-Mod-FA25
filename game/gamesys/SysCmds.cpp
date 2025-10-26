@@ -26,7 +26,7 @@
 // RAVEN END
 
 #ifdef _WIN32
-#include "TypeInfo.h"
+#include "TypeInfo"
 #else
 #include "NoGameTypeInfo.h"
 #endif
@@ -171,7 +171,7 @@ void Cmd_ListSpawnArgs_f( const idCmdArgs &args ) {
 
 	for ( i = 0; i < ent->spawnArgs.GetNumKeyVals(); i++ ) {
 		const idKeyValue *kv = ent->spawnArgs.GetKeyVal( i );
-		gameLocal.Printf( "\"%s\"  "S_COLOR_WHITE"\"%s\"\n", kv->GetKey().c_str(), kv->GetValue().c_str() );
+		gameLocal.Printf( "\"%s\"  " S_COLOR_WHITE "\"%s\"\n", kv->GetKey().c_str(), kv->GetValue().c_str() );
 	}
 }
 
@@ -3039,6 +3039,159 @@ void Cmd_ClientOverflowReliable_f( const idCmdArgs& args ) {
 #endif
 
 /*
+===============
+dash command
+===============
+*/
+static void Cmd_Dash(const idCmdArgs& args) {
+	gameLocal.Printf("DASH!\n");
+	idPlayer* player;
+	player = gameLocal.GetLocalPlayer();
+	if (!player) {
+		return;
+	}
+	//dash at the direction the player views
+	idVec3 viewForward = player->viewAngles.ToForward();
+	viewForward.z = 0;
+	viewForward.Normalize();
+
+	//speed of dash
+	float speed = 400.0f;
+
+	idVec3 dashVelocity = viewForward * speed;
+	player->GetPhysics()->SetLinearVelocity(player->GetPhysics()->GetLinearVelocity() + dashVelocity);
+
+}
+
+/*
+===============
+right mouse key
+===============
+*/
+static void Cmd_Dodge(const idCmdArgs& args) {
+	gameLocal.Printf("DODGE!\n");
+	idPlayer *player = gameLocal.GetLocalPlayer();
+	const usercmd_t& cmd = player->usercmd;
+	idMat3 viewAxis = player->viewAngles.ToMat3();
+
+	idVec3 dodgeDir;
+		
+	if (!player) {
+		return;
+	}
+	//player has to press the dodge key and the direction they want to dodge
+	//the direction that player can dodge are left right and back
+
+	if (cmd.rightmove < 0) {
+		//right
+		dodgeDir = viewAxis[1];
+		gameLocal.Printf("Right\n");
+	}
+	else if (cmd.rightmove > 0) {
+		//left
+		dodgeDir = viewAxis[1] * -1.0f;
+		gameLocal.Printf("Left\n");
+	}
+	else if (cmd.forwardmove < 0) {
+		//back
+		dodgeDir = viewAxis[0] * -1.0f;
+		gameLocal.Printf("Back\n");
+	}
+	else {
+		//default to back
+		dodgeDir = viewAxis[0] * -1.0f;
+		gameLocal.Printf("Default\n");
+	}
+
+	//speed of dodge movement
+	float dodgeSpeed = 550.0f;
+	idVec3 playerVelocity = player->GetPhysics()->GetLinearVelocity();
+	player->GetPhysics()->SetLinearVelocity(dodgeDir * dodgeSpeed);
+	player->GetPhysics()->AddForce(0, dodgeDir * dodgeSpeed * 50.0f, player->GetPhysics()->GetOrigin());
+
+} 
+
+/*
+===============
+Block command E key
+
+===============
+*/
+static void Cmd_Block(const idCmdArgs& args) {
+	gameLocal.Printf("BLOCK!\n");
+	idPlayer* player;
+	player = gameLocal.GetLocalPlayer();
+	if (!player) {
+		return;
+	}
+	//set godmode on for a few seconds
+	player->block = !player->block;
+	player->godmode = player->block;
+
+	if (player->block) {
+		player->blockEndTime = gameLocal.time + 5000;
+		player->hud->SetStateBool("block_indicator_visible", true);
+	}
+	else {
+		player->blockEndTime = 0;
+		player->hud->SetStateBool("block_indicator_visible", false);
+	}
+	
+}
+
+/*
+===============
+stomp command V key
+===============
+*/
+static void Cmd_Stomp(const idCmdArgs& args) {
+	idPlayer* player;
+	player = gameLocal.GetLocalPlayer();
+
+	if (!player) {
+		return;
+	}
+	player->godmode = true;
+	//check player is in mid-air
+	if (!player->GetPhysics()->HasGroundContacts() && player->GetPhysics()->GetLinearVelocity().z <= 0) {
+
+		idVec3 stompVel = player->GetPhysics()->GetLinearVelocity();
+		stompVel.z = -400.0f;
+		player->GetPhysics()->SetLinearVelocity(stompVel);
+
+		//damage the stomp causes
+		player->stomping = true;
+		player->stompDamage = 10.0f;
+		gameLocal.Printf("STOMP being called!\n");
+	} 
+}
+
+
+/*
+===============
+help screen command
+===============
+*/
+bool helpOn = false;
+static void Cmd_HelpScreen(const idCmdArgs& args) {
+	idPlayer* player;
+	player = gameLocal.GetLocalPlayer();
+	if (!player) {
+		return;
+	}
+
+	if (helpOn) {
+		player->hud->SetStateBool("help_visible", false);
+		helpOn = false;
+	}
+	else {
+		player->hud->SetStateBool("help_visible", true);
+		helpOn = true;
+	}
+	
+}
+
+/*
 =================
 idGameLocal::InitConsoleCommands
 
@@ -3231,7 +3384,20 @@ void idGameLocal::InitConsoleCommands( void ) {
 // squirrel: Mode-agnostic buymenus
 	cmdSystem->AddCommand( "buyMenu",				Cmd_ToggleBuyMenu_f,		CMD_FL_GAME,				"Toggle buy menu (if in a buy zone and the game type supports it)" );
 	cmdSystem->AddCommand( "buy",					Cmd_BuyItem_f,				CMD_FL_GAME,				"Buy an item (if in a buy zone and the game type supports it)" );
-// RITUAL END
+
+	//Dash command
+	cmdSystem->AddCommand("dash",					Cmd_Dash,					CMD_FL_GAME,				"Player can dash when pressing Leftshift");
+	//Block
+	cmdSystem->AddCommand("block",					Cmd_Block,					CMD_FL_GAME,				"Player can block enemie attacks");
+	//Dodge
+	cmdSystem->AddCommand("dodge",					Cmd_Dodge,					CMD_FL_GAME,				"Player can dodge enemie attacks");
+	//stomp
+	cmdSystem->AddCommand("stomp",					Cmd_Stomp,					CMD_FL_GAME,				"Player can stomp on enemies while in the air");
+	
+	//help screen
+	cmdSystem->AddCommand("HelpScreen", Cmd_HelpScreen, CMD_FL_GAME, "custom help screen");
+
+	// RITUAL END
 
 }
 

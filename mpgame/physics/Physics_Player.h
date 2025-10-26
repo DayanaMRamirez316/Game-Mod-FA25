@@ -173,6 +173,8 @@ private:
 	void					DropTimers( void );
 	void					MovePlayer( int msec );
 
+	bool					CheckDoubleJump( void );
+
 	// forceLength:
 	// 0 => use the pm_slideVelocity / pm_powerSlide settings
 	// 1 => maintain velocity

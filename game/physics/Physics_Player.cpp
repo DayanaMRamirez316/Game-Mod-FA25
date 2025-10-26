@@ -10,9 +10,9 @@ END_CLASS
 const float PM_STOPSPEED		= 100.0f;
 const float PM_SWIMSCALE		= 0.5f;
 const float PM_LADDERSPEED		= 100.0f;
-const float PM_STEPSCALE		= 1.0f;
+const float PM_STEPSCALE		= 1.0f; //1.0
 
-const float PM_ACCELERATE_SP	= 10.0f;
+const float PM_ACCELERATE_SP	= 10.0f; //10
 const float PM_AIRACCELERATE_SP	= 1.0f;
 const float PM_ACCELERATE_MP	= 15.0f;
 const float PM_AIRACCELERATE_MP	= 1.18f;
@@ -42,9 +42,13 @@ const int PMF_TIME_LAND			= 32;		// movementTime is time before rejump
 const int PMF_TIME_KNOCKBACK	= 64;		// movementTime is an air-accelerate only time
 const int PMF_TIME_WATERJUMP	= 128;		// movementTime is waterjump
 const int PMF_ALL_TIMES			= (PMF_TIME_WATERJUMP|PMF_TIME_LAND|PMF_TIME_KNOCKBACK);
+const int PMF_DOUBLE_JUMP		= 256;		// player can jump again
+const int PMF_DOUBLE_JUMPED		= 512;		// player has already jumped
+const int PMF_STOMP				= 1024;		// player can stomp
+const int PMF_STOMPED			= 2048;		// player has already stomped
 
 int c_pmove = 0;
-
+ 
 float idPhysics_Player::Pm_Accelerate( void ) {
 	return gameLocal.IsMultiplayer() ? PM_ACCELERATE_MP : PM_ACCELERATE_SP;
 }
@@ -72,7 +76,7 @@ float idPhysics_Player::CmdScale( const usercmd_t &cmd ) const {
 
 	forwardmove = cmd.forwardmove;
 	rightmove = cmd.rightmove;
-
+	
 	// since the crouch key doubles as downward movement, ignore downward movement when we're on the ground
 	// otherwise crouch speed will be lower than specified
 	if ( walking ) {
@@ -636,6 +640,7 @@ void idPhysics_Player::AirMove( void ) {
 	idVec3		wishdir;
 	float		wishspeed;
 	float		scale;
+	
 
 // RAVEN BEGIN
 // bdube: crouch time
@@ -647,7 +652,8 @@ void idPhysics_Player::AirMove( void ) {
 		}
 	}
 // RAVEN END
-
+	//check to jump again
+	idPhysics_Player::CheckDoubleJump();
 	idPhysics_Player::Friction();
 
 	scale = idPhysics_Player::CmdScale( command );
@@ -676,6 +682,7 @@ void idPhysics_Player::AirMove( void ) {
 
 	// NOTE: enable stair checking while moving through the air in multiplayer to allow bunny hopping onto stairs
 	idPhysics_Player::SlideMove( true, gameLocal.isMultiplayer, false, false );
+
 }
 
 /*
@@ -683,7 +690,7 @@ void idPhysics_Player::AirMove( void ) {
 idPhysics_Player::WalkMove
 ===================
 */
-void idPhysics_Player::WalkMove( void ) {
+void idPhysics_Player::WalkMove(void) {
 	idVec3		wishvel;
 	idVec3		wishdir;
 	float		wishspeed;
@@ -692,15 +699,15 @@ void idPhysics_Player::WalkMove( void ) {
 	idVec3		oldVelocity, vel;
 	float		oldVel, newVel;
 
-	if ( waterLevel > WATERLEVEL_WAIST && ( viewForward * groundTrace.c.normal ) > 0.0f ) {
+	if (waterLevel > WATERLEVEL_WAIST && (viewForward * groundTrace.c.normal) > 0.0f) {
 		// begin swimming
 		idPhysics_Player::WaterMove();
 		return;
 	}
 
-	if ( idPhysics_Player::CheckJump() ) {
+	if (idPhysics_Player::CheckJump()) {
 		// jumped away
-		if ( waterLevel > WATERLEVEL_FEET ) {
+		if (waterLevel > WATERLEVEL_FEET) {
 			idPhysics_Player::WaterMove();
 		}
 		else {
@@ -711,15 +718,15 @@ void idPhysics_Player::WalkMove( void ) {
 
 	idPhysics_Player::Friction();
 
-	scale = idPhysics_Player::CmdScale( command );
+	scale = idPhysics_Player::CmdScale(command);
 
 	// project moves down to flat plane
 	viewForward -= (viewForward * gravityNormal) * gravityNormal;
 	viewRight -= (viewRight * gravityNormal) * gravityNormal;
 
 	// project the forward and right directions onto the ground plane
-	viewForward.ProjectOntoPlane( groundTrace.c.normal, OVERCLIP );
-	viewRight.ProjectOntoPlane( groundTrace.c.normal, OVERCLIP );
+	viewForward.ProjectOntoPlane(groundTrace.c.normal, OVERCLIP);
+	viewRight.ProjectOntoPlane(groundTrace.c.normal, OVERCLIP);
 	//
 	viewForward.Normalize();
 	viewRight.Normalize();
@@ -730,56 +737,57 @@ void idPhysics_Player::WalkMove( void ) {
 	wishspeed *= scale;
 
 	// clamp the speed lower if wading or walking on the bottom
-	if ( waterLevel ) {
+	if (waterLevel) {
 		float	waterScale;
 
 		waterScale = waterLevel / 3.0f;
-		waterScale = 1.0f - ( 1.0f - PM_SWIMSCALE ) * waterScale;
-		if ( wishspeed > playerSpeed * waterScale ) {
+		waterScale = 1.0f - (1.0f - PM_SWIMSCALE) * waterScale;
+		if (wishspeed > playerSpeed * waterScale) {
 			wishspeed = playerSpeed * waterScale;
 		}
 	}
 
 	// when a player gets hit, they temporarily lose full control, which allows them to be moved a bit
-	if ( ( groundMaterial && groundMaterial->GetSurfaceFlags() & SURF_SLICK ) || current.movementFlags & PMF_TIME_KNOCKBACK ) {
+	if ((groundMaterial && groundMaterial->GetSurfaceFlags() & SURF_SLICK) || current.movementFlags & PMF_TIME_KNOCKBACK) {
 		accelerate = Pm_AirAccelerate();
 	}
 	else {
 		accelerate = Pm_Accelerate();
 	}
 
-	idPhysics_Player::Accelerate( wishdir, wishspeed, accelerate );
+	idPhysics_Player::Accelerate(wishdir, wishspeed, accelerate);
 
-	if ( ( groundMaterial && groundMaterial->GetSurfaceFlags() & SURF_SLICK ) || current.movementFlags & PMF_TIME_KNOCKBACK ) {
+	if ((groundMaterial && groundMaterial->GetSurfaceFlags() & SURF_SLICK) || current.movementFlags & PMF_TIME_KNOCKBACK) {
 		current.velocity += gravityVector * frametime;
 	}
 
 	oldVelocity = current.velocity;
 
 	// slide along the ground plane
-	current.velocity.ProjectOntoPlane( groundTrace.c.normal, OVERCLIP );
+	current.velocity.ProjectOntoPlane(groundTrace.c.normal, OVERCLIP);
 
 	// if not clipped into the opposite direction
-	if ( oldVelocity * current.velocity > 0.0f ) {
+	if (oldVelocity * current.velocity > 0.0f) {
 		newVel = current.velocity.LengthSqr();
-		if ( newVel > 1.0f ) {
+		if (newVel > 1.0f) {
 			oldVel = oldVelocity.LengthSqr();
-			if ( oldVel > 1.0f ) {
+			if (oldVel > 1.0f) {
 				// don't decrease velocity when going up or down a slope
-				current.velocity *= idMath::Sqrt( oldVel / newVel );
+				current.velocity *= idMath::Sqrt(oldVel / newVel);
 			}
 		}
 	}
 
 	// don't do anything if standing still
 	vel = current.velocity - (current.velocity * gravityNormal) * gravityNormal;
-	if ( vel.IsZero() ) {
+	if (vel.IsZero()) {
 		return;
 	}
 
 	gameLocal.push.InitSavingPushedEntityPositions();
 
-	idPhysics_Player::SlideMove( false, true, true, !gameLocal.isMultiplayer );
+	idPhysics_Player::SlideMove(false, true, true, !gameLocal.isMultiplayer);
+
 }
 
 /*
@@ -1103,6 +1111,10 @@ void idPhysics_Player::CheckGround( bool checkStuck ) {
 	groundPlane = true;
 	walking = true;
 
+	//reset double jump
+	current.movementFlags &= ~PMF_DOUBLE_JUMPED;
+	current.movementFlags |= PMF_DOUBLE_JUMP;
+	
 	// hitting solid ground will end a waterjump
 	if ( current.movementFlags & PMF_TIME_WATERJUMP ) {
 		current.movementFlags &= ~( PMF_TIME_WATERJUMP | PMF_TIME_LAND );
@@ -1118,7 +1130,7 @@ void idPhysics_Player::CheckGround( bool checkStuck ) {
 			current.movementTime = 250;
 		}		
 	}
-
+	
 	// let the entity know about the collision
 	if ( self ) {
 		self->Collide( groundTrace, current.velocity );
@@ -1131,6 +1143,7 @@ void idPhysics_Player::CheckGround( bool checkStuck ) {
 			groundEntityPtr.GetEntity()->ApplyImpulse( self, groundTrace.c.id, groundTrace.c.point, current.velocity / ( info.invMass * 10.0f ) );
 		}
 	}
+
 }
 
 /*
@@ -1198,6 +1211,7 @@ void idPhysics_Player::CheckDuck( void ) {
 		}
 	}
 }
+
 
 /*
 ================
@@ -1285,17 +1299,19 @@ bool idPhysics_Player::CheckJump( void ) {
 	}
 
 	// don't jump if we can't stand up
-	if ( current.movementFlags & PMF_DUCKED ) {
+	if (current.movementFlags & PMF_DUCKED) {
 		return false;
 	}
 
 	groundPlane = false;		// jumping away
 	walking = false;
 	current.movementFlags |= PMF_JUMP_HELD | PMF_JUMPED;
+	current.movementFlags |= PMF_DOUBLE_JUMP;
 
-	addVelocity = 2.0f * maxJumpHeight * -gravityVector;
+	addVelocity = 5.0f * maxJumpHeight * -gravityVector;
 	addVelocity *= idMath::Sqrt( addVelocity.Normalize() );
 	current.velocity += addVelocity;
+	gameLocal.Printf("Jump 1 \n");
 
 // RAVEN BEGIN
 // bdube: crouch slide, nick maggoire is awesome
@@ -1304,6 +1320,41 @@ bool idPhysics_Player::CheckJump( void ) {
 
 	return true;
 }
+
+/*
+=============
+Double JUMP 
+=============
+*/
+bool idPhysics_Player::CheckDoubleJump(void) {
+	idVec3 addVelocity;
+
+	//jump 2
+	if ( !walking && !groundPlane && (current.movementFlags & PMF_DOUBLE_JUMP) && !(current.movementFlags & PMF_DOUBLE_JUMPED)) {
+		if ( command.upmove < 10) {
+			// not holding jump
+			return false;
+		}
+
+		// must wait for jump to be released
+		if (current.movementFlags & PMF_JUMP_HELD) {
+			return false;
+		}
+
+		current.movementFlags |= PMF_JUMP_HELD | PMF_DOUBLE_JUMPED;
+		current.movementFlags &= ~PMF_DOUBLE_JUMP;
+
+		addVelocity = 5.0f * maxJumpHeight * -gravityVector;
+		addVelocity *= idMath::Sqrt(addVelocity.Normalize());
+		current.velocity += addVelocity;
+
+		gameLocal.Printf("Jump 2 \n");
+		current.crouchSlideTime = 0;
+		return true;
+	}
+	return false;
+}
+
 
 /*
 =============
@@ -1588,6 +1639,7 @@ void idPhysics_Player::MovePlayer( int msec ) {
 }
 
 
+
 /*
 ================
 idPhysics_Player::GetWaterLevel
@@ -1666,7 +1718,7 @@ idPhysics_Player::idPhysics_Player( void ) {
 	walkSpeed = 0;
 	crouchSpeed = 0;
 	maxStepHeight = 0;
-	maxJumpHeight = 0;
+	maxJumpHeight = 100;
 	memset( &command, 0, sizeof( command ) );
 	viewAngles.Zero();
 	framemsec = 0;
@@ -1845,6 +1897,7 @@ idPhysics_Player::SetMaxJumpHeight
 */
 void idPhysics_Player::SetMaxJumpHeight( const float newMaxJumpHeight ) {
 	maxJumpHeight = newMaxJumpHeight;
+
 }
 
 /*

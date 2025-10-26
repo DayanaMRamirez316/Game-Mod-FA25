@@ -68,7 +68,7 @@ public:
 	void					SetMovementType( const pmtype_t type );
 	void					SetPlayerInput( const usercmd_t &cmd, const idAngles &newViewAngles );
 	void					SetKnockBack( const int knockBackTime );
-	void					SetDebugLevel( bool set );
+	void					SetDebugLevel( bool set );	 
 							// feed back from last physics frame
 	waterLevel_t			GetWaterLevel( void ) const;
 	int						GetWaterType( void ) const;
@@ -171,6 +171,7 @@ private:
 	void					SpectatorMove( void );
 	void					LadderMove( void );
 	void					CorrectAllSolid( trace_t &trace, int contents );
+	//void					Dash( const usercmd_t& cmd ) const;
 // RAVEN BEGIN
 // MrE: check stuck
 	void					CheckGround( bool checkStuck );
@@ -185,6 +186,8 @@ private:
 
 	float					Pm_Accelerate( void );
 	float					Pm_AirAccelerate( void );
+	
+	bool					CheckDoubleJump(void);
 };
 
 ID_INLINE bool idPhysics_Player::IsNoclip( void ) const {

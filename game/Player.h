@@ -3,6 +3,7 @@
 //
 // MERGE_DATE 07/07/2004
 
+#include "../mpgame/Weapon.h"
 #ifndef __GAME_PLAYER_H__
 #define __GAME_PLAYER_H__
 
@@ -303,6 +304,56 @@ public:
 
 	int						lastHitTime;			// last time projectile fired by player hit target
 	int						lastSavingThrowTime;	// for the "free miss" effect
+	
+	//rhythm detector 
+	float beatTimer;
+	bool noteActive;
+	float noteMove;
+
+	//BPM for song
+	float bpm;
+	float beatTime;
+
+
+	//beatSpeed function
+	int hitCounter;
+	int missCounter;
+
+	//block
+	int blockEndTime = 0;
+	bool block;
+
+	//stomp
+	bool stomping;
+	float stompDamage;
+
+	//powerups
+	bool slowdownPow;
+	bool multiBullets;
+	bool invinciblePow;
+	bool blastPow;
+	bool freezePow;
+	int powRand;
+
+	//power up duration
+	int powTime;
+	int powEndTime;
+
+	//hinder
+	bool speedUp;
+	bool changeAngle;
+	bool disapear;
+
+	//hinder functions
+	int rand;
+	void changeAngleRan(int num);
+	bool noteE;
+	int hinderRand;
+
+	int hinderTime;
+	int hinderEndTime;
+
+
 
 	struct playerFlags_s {
 		bool		forward			:1;
@@ -786,6 +837,7 @@ public:
 
 	bool					AllowedVoiceDest( int from );
 
+
 // RITUAL BEGIN
 // squirrel: added DeadZone multiplayer
 	itemBuyStatus_t			ItemBuyStatus( const char* itemName );
@@ -1115,6 +1167,17 @@ private:
 	
 	bool doInitWeapon;
 	void					InitWeapon			( void );
+
+	void spawnNotes();
+	void checkHit();
+	void beatSpeed(float bpm);
+	void checkStomp();
+	void powerUp(int num);
+	void blast();
+	void Freeze();
+	void resetPow(int num);
+	void hinder(int num);
+	void resetHinder(int num);
 	// RAVEN END
 
 	bool					IsLegsIdle						( bool crouching ) const;
@@ -1155,6 +1218,7 @@ private:
 	stateResult_t			State_Legs_Dead					( const stateParms_t& parms );
 	
  	CLASS_STATES_PROTOTYPE( idPlayer );
+
 };
 
 ID_INLINE bool idPlayer::IsBeingTalkedTo( void ) {
